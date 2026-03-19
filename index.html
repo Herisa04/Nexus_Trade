@@ -255,13 +255,7 @@ select:focus{border-color:var(--accent);}
     <div class="live-badge"><div class="live-dot"></div>LIVE ENGINE</div>
   </header>
 
-  <!-- FINNHUB API KEY BANNER -->
-  <div class="api-banner" id="apiBanner">
-    <span class="api-label">🔑 FINNHUB API KEY</span>
-    <input class="api-input" id="apiKeyInput" type="text" placeholder="Masukkan Finnhub API Key kamu di sini..." autocomplete="off" oninput="checkApiInput()">
-    <button class="api-btn" onclick="setFinnhubKey()">✓ APPLY</button>
-    <span class="api-status" id="apiStatus" style="color:var(--muted);">⚪ NOT SET — Daftar gratis: finnhub.io/register</span>
-  </div>
+
   <div class="controls">
     <div><label class="ctrl-label">SELECT MARKET</label>
       <select id="mktSel">
@@ -272,7 +266,7 @@ select:focus{border-color:var(--accent);}
           <option value="SOLUSDT">SOL/USD — Solana</option>
           <option value="XRPUSDT">XRP/USD — Ripple</option>
         </optgroup>
-        <optgroup label="— METALS (Finnhub) —">
+        <optgroup label="— METALS (Yahoo Finance) —">
           <option value="XAU/USD">XAU/USD — Gold</option>
           <option value="XAG/USD">XAG/USD — Silver</option>
           <option value="XPT/USD">XPT/USD — Platinum</option>
@@ -298,7 +292,7 @@ select:focus{border-color:var(--accent);}
           <option value="NZD/JPY">NZD/JPY</option><option value="NZD/CHF">NZD/CHF</option>
           <option value="NZD/CAD">NZD/CAD</option>
         </optgroup>
-        <optgroup label="— INDICES (Finnhub) —">
+        <optgroup label="— INDICES (Yahoo Finance) —">
           <option value="IXIC">NASDAQ Composite</option>
           <option value="SPX">S&P 500</option>
           <option value="DJI">Dow Jones</option>
@@ -425,55 +419,14 @@ select:focus{border-color:var(--accent);}
 //  - Migrated Twelve Data → Finnhub API (forex/candle endpoint)
 //  - Symbol mapping: OANDA:EUR_USD format
 //  - 4H candle merging from 1H data
-//  - Finnhub API key banner with localStorage persistence
+//  - Finnhub API key hardcoded (no banner needed)
 //  - Ticker uses Finnhub quote with % change
 // ================================================================
 
-// API KEY — Finnhub (loaded from localStorage if available)
-let FINNHUB_KEY = localStorage.getItem('finnhub_key') || 'MASUKKAN_FINNHUB_KEY_DISINI';
+// API KEY — Finnhub (hardcoded)
+const FINNHUB_KEY = 'd6r5t0hr01qgdhqd9c9gd6r5t0hr01qgdhqd9ca0';
 
-// ================================================================
-//  FINNHUB API BANNER FUNCTIONS
-// ================================================================
-function checkApiInput() {
-  const val = document.getElementById('apiKeyInput').value.trim();
-  const status = document.getElementById('apiStatus');
-  if(val.length > 10) {
-    status.textContent = '✏️ Tekan APPLY untuk menyimpan';
-    status.style.color = 'var(--accent4)';
-  } else {
-    status.textContent = '⚪ NOT SET — Daftar gratis: finnhub.io/register';
-    status.style.color = 'var(--muted)';
-  }
-}
-function setFinnhubKey() {
-  const val = document.getElementById('apiKeyInput').value.trim();
-  if(!val || val.length < 5) {
-    alert('⚠️ API Key tidak valid. Pastikan kamu copy key dari finnhub.io/dashboard');
-    return;
-  }
-  FINNHUB_KEY = val;
-  localStorage.setItem('finnhub_key', val);
-  const status = document.getElementById('apiStatus');
-  status.textContent = '✅ KEY ACTIVE — Forex, Metals & Indices siap dianalisis';
-  status.style.color = 'var(--accent2)';
-  document.getElementById('apiBanner').style.borderColor = 'rgba(0,232,122,.3)';
-  document.getElementById('apiBanner').style.background = 'rgba(0,232,122,.04)';
-  // Fetch forex tickers now that key is set
-  fetchForexTickers();
-}
-// On load: restore key to input if saved
-window.addEventListener('DOMContentLoaded', () => {
-  const saved = localStorage.getItem('finnhub_key');
-  if(saved && saved !== 'MASUKKAN_FINNHUB_KEY_DISINI') {
-    document.getElementById('apiKeyInput').value = saved;
-    const status = document.getElementById('apiStatus');
-    status.textContent = '✅ KEY ACTIVE — Forex, Metals & Indices siap dianalisis';
-    status.style.color = 'var(--accent2)';
-    document.getElementById('apiBanner').style.borderColor = 'rgba(0,232,122,.3)';
-    document.getElementById('apiBanner').style.background = 'rgba(0,232,122,.04)';
-  }
-});
+
 
 // ================================================================
 //  INDICATOR FUNCTIONS (all with data-length guards)
@@ -691,23 +644,75 @@ function buildAnalysis(candles, symbol) {
   const MA200  = n>=200 ? calcSMA(c,200) : null; // null if <200 candles
   const BB     = calcBB(c);
   const ATR_v  = calcATR(h,l,c);
+  const atrSafe = ATR_v > 0 ? ATR_v : (price * 0.001); // fallback 0.1% of price if ATR=0
   const ICHI   = calcIchimoku(h,l,c);  // null if <52 candles
   const FIB    = calcFib(h,l,c);
-  const SR     = calcSR(h,l,c);
-  const SD     = calcSD(h,l,c);
-  const canPat = detectCandle(o,h,l,c);
-  const chPat  = detectChart(c,h,l);
+  // SR, SD, canPat, chPat calculated inside confluence section below
 
   const bbPct = (BB.upper!==BB.lower) ? (price-BB.lower)/(BB.upper-BB.lower) : 0.5;
-  // Bollinger squeeze: compare to dynamic threshold based on price level
-  // bbSqueeze handled in indicator list directly
 
   // Ichimoku signals (only if data available)
   const ichiAbove = ICHI ? price > Math.max(ICHI.senkouA, ICHI.senkouB) : null;
   const ichiTK    = ICHI ? ICHI.tenkan > ICHI.kijun : null;
 
+  // ================================================================
+  //  CONFLUENCE SCORING — Fibo, S/R, Supply/Demand, Candle, Chart
+  // ================================================================
+
+  // --- Fibonacci Confluence (booster) ---
+  // Check if price is near key Fibo levels (38.2%, 50%, 61.8%)
+  let fiboScore = null; // null = skip if no FIB data
+  if(FIB) {
+    const keyLevels = [FIB.f382, FIB.f500, FIB.f618];
+    const tolerance = atrSafe * 0.5; // within 0.5 ATR = "near"
+    const nearLevel = keyLevels.some(lv => Math.abs(price - lv) <= tolerance);
+    if(nearLevel) {
+      // If near key Fibo level, confirm direction with trend
+      fiboScore = FIB.trend === 'up' ? true : false; // up trend = bullish bounce expected
+    } else {
+      fiboScore = null; // not near any key level — skip
+    }
+  }
+
+  // --- Support & Resistance Proximity ---
+  const SR   = calcSR(h,l,c);
+  const srDist = atrSafe * 0.8;
+  // Near Support = bullish (bounce potential), near Resistance = bearish (rejection potential)
+  const nearSupport    = Math.abs(price - SR.s1) <= srDist || Math.abs(price - SR.s2) <= srDist;
+  const nearResistance = Math.abs(price - SR.r1) <= srDist || Math.abs(price - SR.r2) <= srDist;
+  let srBullish = null;
+  if(nearSupport && !nearResistance)    srBullish = true;
+  else if(nearResistance && !nearSupport) srBullish = false;
+  // else: not near any level → skip (null)
+
+  // --- Supply & Demand Zone ---
+  const SD = calcSD(h,l,c);
+  const inDemandZone = price >= SD.demandLow && price <= SD.demandHigh;
+  const inSupplyZone = price >= SD.supplyLow && price <= SD.supplyHigh;
+  let sdBullish = null;
+  if(inDemandZone && !inSupplyZone)    sdBullish = true;
+  else if(inSupplyZone && !inDemandZone) sdBullish = false;
+  // else: not in any zone → skip
+
+  // --- Candlestick Pattern Score ---
+  const canPat = detectCandle(o,h,l,c);
+  const canBullCount = canPat.filter(([,t])=>t==='bull').length;
+  const canBearCount = canPat.filter(([,t])=>t==='bear').length;
+  let canBullish = null;
+  if(canBullCount > canBearCount)      canBullish = true;
+  else if(canBearCount > canBullCount) canBullish = false;
+  else if(canPat[0]?.[1]==='side')     canBullish = null; // Doji/neutral = skip
+
+  // --- Chart Pattern Score ---
+  const chPat = detectChart(c,h,l);
+  const bullishCharts = ['Double Bottom','Ascending Triangle','Bull Flag'];
+  const bearishCharts = ['Double Top','Descending Triangle','Bear Flag'];
+  let chBullish = null;
+  if(bullishCharts.includes(chPat[0]))       chBullish = true;
+  else if(bearishCharts.includes(chPat[0]))  chBullish = false;
+  // Sideways Channel & others → null (skip scoring, display only)
+
   // ---- BUILD WEIGHTED INDICATOR LIST ----
-  // Using 'value' field to indicate if data is available (null = skip)
   const indicators = [
     // TREND (weight 2-3)
     {name:'Price vs MA20',   bullish:MA20!==null&&price>MA20,   value:MA20,   weight:2, category:'trend'},
@@ -724,8 +729,14 @@ function buildAnalysis(candles, symbol) {
     {name:'Williams %R',     bullish:WILLR!==null&&WILLR>-50,   value:WILLR,  weight:1,   category:'momentum'},
     {name:'CCI',             bullish:CCI_v!==null&&CCI_v>0,     value:CCI_v,  weight:1,   category:'momentum'},
     // VOLATILITY (weight 1)
-    {name:'BB Position',     bullish:bbPct>0.5,                 value:1,      weight:1, category:'volatility'},
+    {name:'BB Position',     bullish:bbPct>0.5,                 value:1,      weight:1,   category:'volatility'},
     {name:'BB Squeeze',      bullish:BB.width<1.5,              value:1,      weight:0.5, category:'volatility'},
+    // CONFLUENCE BOOSTERS (lower weight — confirmatory role)
+    {name:'Fibo Confluence', bullish:fiboScore===true,          value:fiboScore!==null?1:null, weight:1, category:'trend'},
+    {name:'S/R Proximity',   bullish:srBullish===true,          value:srBullish!==null?1:null, weight:1, category:'trend'},
+    {name:'S/D Zone',        bullish:sdBullish===true,          value:sdBullish!==null?1:null, weight:1, category:'volatility'},
+    {name:'Candle Pattern',  bullish:canBullish===true,         value:canBullish!==null?1:null,weight:1, category:'momentum'},
+    {name:'Chart Pattern',   bullish:chBullish===true,          value:chBullish!==null?1:null, weight:1.5, category:'trend'},
   ];
 
   const scores = weightedScore(indicators);
@@ -748,7 +759,7 @@ function buildAnalysis(candles, symbol) {
             : symbol.endsWith('USDT')?(price>1000?1:0.01) : 0.0001;
 
   // ATR-based SL/TP
-  const slDist  = Math.max(ATR_v*1.5, pip*80);
+  const slDist  = Math.max(atrSafe*1.5, pip*80);
   const tp1Dist = slDist*1.5;
   const tp2Dist = slDist*2.5;
 
@@ -795,7 +806,10 @@ function buildAnalysis(candles, symbol) {
     rrRatio: (tp2Dist/slDist).toFixed(1),
     pip,
     // Other
-    ...SR, ...SD, canPat, chPat, mtf,
+    ...SR, ...SD, canPat, chPat,
+    // Confluence details for UI badge display
+    fiboScore, srBullish, sdBullish, canBullish, chBullish,
+    mtf,
     dataLen: n
   };
 }
@@ -835,17 +849,15 @@ const fhTF = {
   '30min':'30','1h':'60','4h':'60','1day':'D'
 };
 
-// Finnhub symbol mapping for Forex (OANDA format) and Indices
-// Forex: OANDA:EUR_USD  |  Metals: OANDA:XAU_USD  |  Indices: use stock/candle
-const fhSymMap = {
-  // Metals
-  'XAU/USD':'OANDA:XAU_USD','XAG/USD':'OANDA:XAG_USD',
-  'XPT/USD':'OANDA:XPT_USD','XPD/USD':'OANDA:XPD_USD','XCU/USD':'OANDA:XCU_USD',
-  // Forex Majors
+// ================================================================
+//  SYMBOL MAPS PER SOURCE
+// ================================================================
+
+// Finnhub — FOREX only (OANDA pairs, free tier works)
+const fhForexMap = {
   'EUR/USD':'OANDA:EUR_USD','GBP/USD':'OANDA:GBP_USD','USD/JPY':'OANDA:USD_JPY',
   'USD/CHF':'OANDA:USD_CHF','AUD/USD':'OANDA:AUD_USD','USD/CAD':'OANDA:USD_CAD',
   'NZD/USD':'OANDA:NZD_USD',
-  // Forex Crosses
   'EUR/GBP':'OANDA:EUR_GBP','EUR/JPY':'OANDA:EUR_JPY','EUR/CHF':'OANDA:EUR_CHF',
   'EUR/AUD':'OANDA:EUR_AUD','EUR/CAD':'OANDA:EUR_CAD','EUR/NZD':'OANDA:EUR_NZD',
   'GBP/JPY':'OANDA:GBP_JPY','GBP/CHF':'OANDA:GBP_CHF','GBP/AUD':'OANDA:GBP_AUD',
@@ -853,12 +865,31 @@ const fhSymMap = {
   'AUD/JPY':'OANDA:AUD_JPY','AUD/CHF':'OANDA:AUD_CHF','AUD/CAD':'OANDA:AUD_CAD',
   'AUD/NZD':'OANDA:AUD_NZD','CAD/JPY':'OANDA:CAD_JPY','CAD/CHF':'OANDA:CAD_CHF',
   'CHF/JPY':'OANDA:CHF_JPY','NZD/JPY':'OANDA:NZD_JPY','NZD/CHF':'OANDA:NZD_CHF',
-  'NZD/CAD':'OANDA:NZD_CAD',
-  // Indices (Finnhub uses stock candle endpoint for these)
-  'IXIC':'^IXIC','SPX':'^GSPC','DJI':'^DJI','FTSE':'^FTSE','NI225':'^N225'
+  'NZD/CAD':'OANDA:NZD_CAD'
 };
 
-// For 4h: Finnhub only gives 60m, so we merge 4 candles into 1
+// Yahoo Finance (via allorigins proxy) — Metals & Indices
+// Yahoo symbol: GC=F (Gold), SI=F (Silver), PL=F (Platinum), PA=F (Palladium), HG=F (Copper)
+// Indices: ^IXIC, ^GSPC, ^DJI, ^FTSE, ^N225
+const yahooSymMap = {
+  'XAU/USD':'GC%3DF','XAG/USD':'SI%3DF','XPT/USD':'PL%3DF',
+  'XPD/USD':'PA%3DF','XCU/USD':'HG%3DF',
+  'IXIC':'%5EIXIC','SPX':'%5EGSPC','DJI':'%5EDJI','FTSE':'%5EFTSE','NI225':'%5EN225'
+};
+
+// Yahoo interval map
+const yahooTF = {
+  '1min':'1m','3min':'5m','5min':'5m','15min':'15m',
+  '30min':'30m','1h':'60m','4h':'1h','1day':'1d'
+};
+
+// Yahoo range map (how much history to request)
+const yahooRange = {
+  '1min':'1d','3min':'5d','5min':'5d','15min':'5d',
+  '30min':'1mo','1h':'1mo','4h':'3mo','1day':'1y'
+};
+
+// For 4h: merge hourly candles into 4H
 function merge4H(data) {
   const {opens,highs,lows,closes} = data;
   const o=[],h=[],l=[],c=[];
@@ -870,7 +901,6 @@ function merge4H(data) {
   }
   return {opens:o,highs:h,lows:l,closes:c};
 }
-// For 3min: Finnhub only gives 5m, so we use it as-is (closest available)
 
 async function fetchBinCandles(sym, tf) {
   const res=await fetch(`https://api.binance.com/api/v3/klines?symbol=${sym}&interval=${binTF[tf]||'1h'}&limit=300`);
@@ -880,51 +910,95 @@ async function fetchBinCandles(sym, tf) {
   return {opens:d.map(x=>+x[1]),highs:d.map(x=>+x[2]),lows:d.map(x=>+x[3]),closes:d.map(x=>+x[4])};
 }
 
-async function fetchFinnhubCandles(sym, tf) {
-  if(!FINNHUB_KEY||FINNHUB_KEY==='MASUKKAN_FINNHUB_KEY_DISINI')
-    throw new Error('Finnhub API Key belum diisi! Klik banner di atas dan masukkan key kamu. Daftar gratis: https://finnhub.io/register');
+// ----------------------------------------------------------------
+//  YAHOO FINANCE — Metals & Indices (via allorigins CORS proxy)
+// ----------------------------------------------------------------
+async function fetchYahooCandles(sym, tf) {
+  const yhSym = yahooSymMap[sym];
+  if(!yhSym) throw new Error(`Symbol ${sym} tidak tersedia di Yahoo Finance.`);
 
-  const fhSym = fhSymMap[sym];
-  if(!fhSym) throw new Error(`Symbol ${sym} tidak tersedia di Finnhub mapping.`);
+  const interval = yahooTF[tf] || '60m';
+  const range    = yahooRange[tf] || '1mo';
+
+  // allorigins.win is a free CORS proxy — wraps Yahoo Finance API
+  const yahooUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${yhSym}?interval=${interval}&range=${range}&includePrePost=false`;
+  const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(yahooUrl)}`;
+
+  const res = await fetch(proxyUrl);
+  if(!res.ok) throw new Error(`Proxy error: ${res.status}`);
+  const wrapper = await res.json();
+  if(!wrapper.contents) throw new Error(`Yahoo Finance: Proxy tidak mengembalikan data untuk ${sym}.`);
+  let d;
+  try { d = JSON.parse(wrapper.contents); }
+  catch(e) { throw new Error(`Yahoo Finance: Gagal parse data untuk ${sym}.`); }
+
+  const result = d?.chart?.result?.[0];
+  if(!result) throw new Error(`Yahoo Finance: Tidak ada data untuk ${sym}.`);
+
+  const q = result.indicators?.quote?.[0];
+  if(!q) throw new Error(`Yahoo Finance: Format data tidak valid untuk ${sym}.`);
+  const opens  = q.open  || [];
+  const highs  = q.high  || [];
+  const lows   = q.low   || [];
+  const closes = q.close || [];
+
+  // Filter out null candles
+  const valid = opens.map((_,i)=>i).filter(i=>
+    opens[i]!=null && highs[i]!=null && lows[i]!=null && closes[i]!=null
+  );
+  if(valid.length < 10) throw new Error(`Yahoo Finance: Data tidak cukup untuk ${sym} di timeframe ${tf}.`);
+
+  let out = {
+    opens:  valid.map(i=>opens[i]),
+    highs:  valid.map(i=>highs[i]),
+    lows:   valid.map(i=>lows[i]),
+    closes: valid.map(i=>closes[i])
+  };
+
+  // For 4h: merge hourly candles
+  if(tf === '4h') out = merge4H(out);
+
+  return out;
+}
+
+// ----------------------------------------------------------------
+//  FINNHUB — Forex only
+// ----------------------------------------------------------------
+async function fetchFinnhubCandles(sym, tf) {
+  const fhSym = fhForexMap[sym];
+  if(!fhSym) throw new Error(`Symbol ${sym} tidak tersedia di Finnhub Forex.`);
 
   const resolution = fhTF[tf] || '60';
-  const isIndex = ['IXIC','SPX','DJI','FTSE','NI225'].includes(sym);
+  const now  = Math.floor(Date.now()/1000);
+  const secPerCandle = {'1':60,'5':300,'15':900,'30':1800,'60':3600,'D':86400}[resolution]||3600;
+  const from = now - (secPerCandle * 350);
 
-  // Calculate time range: request enough candles
-  const now = Math.floor(Date.now()/1000);
-  // Estimate how many seconds back we need for 300 candles
-  const secPerCandle = {
-    '1':60,'5':300,'15':900,'30':1800,'60':3600,'D':86400
-  }[resolution]||3600;
-  const from = now - (secPerCandle * 350); // request 350 to get ~300+
-
-  let url;
-  if(isIndex) {
-    // Indices use stock/candle endpoint
-    url = `https://finnhub.io/api/v1/stock/candle?symbol=${encodeURIComponent(fhSym)}&resolution=${resolution}&from=${from}&to=${now}&token=${FINNHUB_KEY}`;
-  } else {
-    // Forex & Metals use forex/candle endpoint
-    url = `https://finnhub.io/api/v1/forex/candle?symbol=${encodeURIComponent(fhSym)}&resolution=${resolution}&from=${from}&to=${now}&token=${FINNHUB_KEY}`;
-  }
-
+  const url = `https://finnhub.io/api/v1/forex/candle?symbol=${encodeURIComponent(fhSym)}&resolution=${resolution}&from=${from}&to=${now}&token=${FINNHUB_KEY}`;
   const res = await fetch(url);
   if(!res.ok) throw new Error(`Finnhub API error: ${res.status}`);
   const d = await res.json();
 
-  if(d.s === 'no_data') throw new Error(`Finnhub: Tidak ada data untuk ${sym}. Coba timeframe atau pair lain.`);
-  if(d.s === 'error' || !d.o || !d.o.length) throw new Error(`Finnhub: ${d.error||'Data kosong. Cek API Key atau symbol.'}`);
+  if(d.s==='no_data') throw new Error(`Finnhub: Tidak ada data untuk ${sym}.`);
+  if(d.s==='error'||!d.o?.length) throw new Error(`Finnhub: ${d.error||'Data kosong.'}`);
 
-  let result = {
-    opens:  d.o,
-    highs:  d.h,
-    lows:   d.l,
-    closes: d.c
-  };
-
-  // For 4h: merge 4 hourly candles into 1
-  if(tf === '4h') result = merge4H(result);
-
+  let result = {opens:d.o, highs:d.h, lows:d.l, closes:d.c};
+  if(tf==='4h') result = merge4H(result);
   return result;
+}
+
+// ----------------------------------------------------------------
+//  ROUTER — pilih source berdasarkan jenis market
+// ----------------------------------------------------------------
+const METALS  = ['XAU/USD','XAG/USD','XPT/USD','XPD/USD','XCU/USD'];
+const INDICES = ['IXIC','SPX','DJI','FTSE','NI225'];
+
+async function fetchFinnhubCandles_router(sym, tf) {
+  // Metals & Indices → Yahoo Finance (gratis, no key needed)
+  if(METALS.includes(sym) || INDICES.includes(sym)) {
+    return await fetchYahooCandles(sym, tf);
+  }
+  // Forex → Finnhub
+  return await fetchFinnhubCandles(sym, tf);
 }
 
 // ================================================================
@@ -1010,42 +1084,53 @@ async function fetchCryptoTick() {
 }
 
 async function fetchForexTickers() {
-  if(!FINNHUB_KEY||FINNHUB_KEY==='MASUKKAN_FINNHUB_KEY_DISINI') return;
-
-  // Finnhub quote endpoint for forex: /api/v1/forex/candle (latest close)
-  // We batch with Promise.allSettled to avoid blocking if one fails
-  // Finnhub free tier: 60 calls/min — fetching 8 tickers is safe
-
+  // Fetch Forex tickers via Finnhub (only pure forex pairs, no metals)
   const fhTickerMap = {
-    'XAU/USD':'OANDA:XAU_USD','EUR/USD':'OANDA:EUR_USD',
-    'GBP/USD':'OANDA:GBP_USD','USD/JPY':'OANDA:USD_JPY',
-    'AUD/USD':'OANDA:AUD_USD','USD/CAD':'OANDA:USD_CAD',
-    'GBP/JPY':'OANDA:GBP_JPY','EUR/JPY':'OANDA:EUR_JPY'
+    'EUR/USD':'OANDA:EUR_USD','GBP/USD':'OANDA:GBP_USD',
+    'USD/JPY':'OANDA:USD_JPY','AUD/USD':'OANDA:AUD_USD',
+    'USD/CAD':'OANDA:USD_CAD','GBP/JPY':'OANDA:GBP_JPY','EUR/JPY':'OANDA:EUR_JPY'
   };
 
-  const delay = ms => new Promise(r => setTimeout(r, ms));
-  const now = Math.floor(Date.now()/1000);
-  const from = now - 7200; // last 2 hours
+  const now  = Math.floor(Date.now()/1000);
+  const from = now - 7200;
 
+  // Fetch forex via Finnhub
+  const forexSyms = MARQUEE_FOREX.filter(s => fhTickerMap[s]);
   const results = await Promise.allSettled(
-    MARQUEE_FOREX.map(sym =>
-      fetch(`https://finnhub.io/api/v1/forex/candle?symbol=${encodeURIComponent(fhTickerMap[sym]||'OANDA:EUR_USD')}&resolution=60&from=${from}&to=${now}&token=${FINNHUB_KEY}`)
-        .then(r=>r.json())
-        .then(d => ({sym, d}))
+    forexSyms.map(sym =>
+      fetch(`https://finnhub.io/api/v1/forex/candle?symbol=${encodeURIComponent(fhTickerMap[sym])}&resolution=60&from=${from}&to=${now}&token=${FINNHUB_KEY}`)
+        .then(r=>r.json()).then(d=>({sym,d}))
     )
   );
-
   for (const res of results) {
     if(res.status==='fulfilled') {
       const {sym, d} = res.value;
       if(d.s==='ok' && d.c && d.c.length >= 2) {
         const price = d.c[d.c.length-1];
         const prev  = d.c[d.c.length-2];
-        const chg   = prev > 0 ? ((price-prev)/prev)*100 : 0;
-        tickerData[sym] = { price: fmtT(sym, price), chg };
+        tickerData[sym] = { price: fmtT(sym, price), chg: prev>0?((price-prev)/prev)*100:0 };
       }
     }
   }
+
+  // Fetch XAU/USD via Yahoo Finance (always free, no key needed)
+  try {
+    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent('https://query1.finance.yahoo.com/v8/finance/chart/GC%3DF?interval=60m&range=5d')}`;
+    const r  = await fetch(proxyUrl);
+    const w  = await r.json();
+    if(!w.contents) throw new Error('no contents');
+    const yj = JSON.parse(w.contents);
+    const q  = yj?.chart?.result?.[0]?.indicators?.quote?.[0];
+    if(q?.close?.length >= 2) {
+      const closes = q.close.filter(x=>x!=null);
+      if(closes.length >= 2) {
+        const price  = closes[closes.length-1];
+        const prev   = closes[closes.length-2];
+        tickerData['XAU/USD'] = { price: fmtT('XAU/USD', price), chg: prev>0?((price-prev)/prev)*100:0 };
+      }
+    }
+  } catch(e) {}
+
   buildMarquee();
 }
 
@@ -1064,20 +1149,19 @@ async function runAnalysis() {
   const isCrypto=symbol.endsWith('USDT');
   const btn=document.querySelector('.analyze-btn');
 
-  if(!isCrypto&&!FINNHUB_KEY){
-    alert('⚠️ Masukkan Finnhub API Key dulu!\n\nDaftar gratis: https://finnhub.io/register');
-    return;
-  }
-
   btn.disabled=true;
   document.getElementById('spinner').classList.add('show');
-  document.getElementById('spinSub').textContent=isCrypto?'Fetching Binance candles...':'Fetching Finnhub candles...';
+  const isYahoo = METALS.includes(symbol) || INDICES.includes(symbol);
+  document.getElementById('spinSub').textContent = isCrypto
+    ? 'Fetching Binance candles...'
+    : isYahoo ? 'Fetching Yahoo Finance candles...'
+    : 'Fetching Finnhub candles...';
 
   try {
-    const candles=isCrypto ? await fetchBinCandles(symbol,tf) : await fetchFinnhubCandles(symbol,tf);
+    const candles=isCrypto ? await fetchBinCandles(symbol,tf) : await fetchFinnhubCandles_router(symbol,tf);
     document.getElementById('spinSub').textContent='Running weighted analysis...';
     const a=buildAnalysis(candles,symbol);
-    const src=isCrypto?'BINANCE':'FINNHUB';
+    const src = isCrypto ? 'BINANCE' : (METALS.includes(symbol)||INDICES.includes(symbol)) ? 'YAHOO FINANCE' : 'FINNHUB';
 
     // MTF update
     ['M15','M30','H1','H4','D1','BIAS'].forEach(t=>{
@@ -1093,9 +1177,9 @@ async function runAnalysis() {
     const sigIcon = a.signal==='BUY'?'▲':a.signal==='SELL'?'▼':'⏸';
     const sigDesc = a.signal==='WAIT'
       ? 'Indikator tidak sepakat — Disarankan menunggu konfirmasi sebelum entry'
-      : a.conf>=75 ? 'STRONG SIGNAL — Mayoritas indikator sepakat'
-      : a.conf>=55 ? 'MODERATE SIGNAL — Sebagian besar indikator sepakat'
-      : 'WEAK SIGNAL — Beberapa indikator belum confirm';
+      : a.conf>=75 ? 'STRONG SIGNAL — Multi-confluence terkonfirmasi'
+      : a.conf>=55 ? 'MODERATE SIGNAL — Sebagian besar indikator + confluence sepakat'
+      : 'WEAK SIGNAL — Beberapa indikator belum confirm, hati-hati';
 
     document.getElementById('anaBody').innerHTML=`
     <div class="fade-in">
@@ -1210,76 +1294,100 @@ async function runAnalysis() {
           ${a.CCI_v!==null?`<span class="i-sig ${a.CCI_v>100?'bull':a.CCI_v<-100?'bear':a.CCI_v>0?'bull':'bear'}">${a.CCI_v>100?'STRONG BULL':a.CCI_v<-100?'STRONG BEAR':a.CCI_v>0?'BULLISH':'BEARISH'}</span>`:`<span class="i-sig side">N/A</span>`}</div>
       </div>
 
-      <!-- BOLLINGER BANDS -->
-      <div class="sec-title">🌊 BOLLINGER BANDS (20,2)</div>
-      <div class="bb-box">
-        <div class="bb-row"><span class="bb-lbl">Upper Band</span><span class="bb-val" style="color:var(--danger)">${fmt(symbol,a.BB.upper)}</span></div>
-        <div class="bb-row"><span class="bb-lbl">Middle (MA20)</span><span class="bb-val" style="color:var(--accent)">${fmt(symbol,a.BB.middle)}</span></div>
-        <div class="bb-row"><span class="bb-lbl">Lower Band</span><span class="bb-val" style="color:var(--accent2)">${fmt(symbol,a.BB.lower)}</span></div>
-        <div class="bb-row"><span class="bb-lbl">Band Width</span><span class="bb-val" style="color:var(--accent4)">${a.BB.width.toFixed(3)}%${a.BB.width<0.5?' 🔴 SQUEEZE':a.BB.width>3?' 🔵 EXPANSION':''}</span></div>
-        <div class="bb-row"><span class="bb-lbl">%B Position</span><span class="bb-val">${(a.bbPct*100).toFixed(1)}%</span></div>
-        <div style="margin-top:10px;position:relative;">
-          <div class="bb-track">
-            <div class="bb-fill"></div>
-            <div class="bb-dot" style="left:${Math.min(Math.max(a.bbPct*100,2),98)}%;"></div>
+      <!-- BOLLINGER BANDS + FIBONACCI side by side -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:4px;">
+        <div>
+          <div class="sec-title" style="margin-top:16px;">🌊 BOLLINGER BANDS</div>
+          <div class="bb-box" style="margin-bottom:0">
+            <div class="bb-row"><span class="bb-lbl">Upper Band</span><span class="bb-val" style="color:var(--danger)">${fmt(symbol,a.BB.upper)}</span></div>
+            <div class="bb-row"><span class="bb-lbl">Middle (MA20)</span><span class="bb-val" style="color:var(--accent)">${fmt(symbol,a.BB.middle)}</span></div>
+            <div class="bb-row"><span class="bb-lbl">Lower Band</span><span class="bb-val" style="color:var(--accent2)">${fmt(symbol,a.BB.lower)}</span></div>
+            <div class="bb-row"><span class="bb-lbl">Band Width</span><span class="bb-val" style="color:var(--accent4)">${a.BB.width.toFixed(3)}%${a.BB.width<0.5?' 🔴 SQZ':a.BB.width>3?' 🔵 EXP':''}</span></div>
+            <div class="bb-row"><span class="bb-lbl">%B Position</span><span class="bb-val">${(a.bbPct*100).toFixed(1)}%</span></div>
+            <div style="margin-top:10px;position:relative;">
+              <div class="bb-track"><div class="bb-fill"></div><div class="bb-dot" style="left:${Math.min(Math.max(a.bbPct*100,2),98)}%;"></div></div>
+              <div class="bb-labels"><span>LOW</span><span>MID</span><span>UPR</span></div>
+            </div>
+            <div class="bb-status" style="color:${a.bbPct>0.85?'var(--danger)':a.bbPct<0.15?'var(--accent2)':'var(--muted)'}">
+              ${a.bbPct>0.85?'⚠️ Near Upper — Overbought':a.bbPct<0.15?'⚠️ Near Lower — Oversold':'Within BB range'}
+            </div>
           </div>
-          <div class="bb-labels"><span>LOWER</span><span>MIDDLE</span><span>UPPER</span></div>
         </div>
-        <div class="bb-status" style="color:${a.bbPct>0.85?'var(--danger)':a.bbPct<0.15?'var(--accent2)':'var(--muted)'}">
-          ${a.bbPct>0.85?'⚠️ Near Upper Band — Potential Reversal/Overbought':a.bbPct<0.15?'⚠️ Near Lower Band — Potential Reversal/Oversold':'Price within BB range'}
+        <div>
+          <div class="sec-title" style="margin-top:16px;">🔢 FIBONACCI RETRACEMENT ${a.fiboScore!==null?`<span class="badge ${a.fiboScore?'real':''}" style="${a.fiboScore?'':'background:rgba(255,51,80,.12);color:var(--danger);border:1px solid rgba(255,51,80,.25);'}">${a.fiboScore?'✅ CONFLUENCE':'⚠️ CONFLUENCE'}</span>`:''}</div>
+          ${a.FIB ? `
+          <div class="bb-box" style="margin-bottom:0;padding:10px 12px;">
+            <table class="fib-table" style="margin-bottom:0;">
+              <tr><td>0%</td><td style="font-size:9px;">${a.FIB.trend==='up'?'Hi':'Lo'}</td><td>${fmt(symbol,a.FIB.f0)}</td></tr>
+              <tr><td>23.6%</td><td style="font-size:9px;">Weak</td><td>${fmt(symbol,a.FIB.f236)}</td></tr>
+              <tr><td>38.2%</td><td style="font-size:9px;">Mod S</td><td>${fmt(symbol,a.FIB.f382)}</td></tr>
+              <tr class="fib-near"><td>50.0%</td><td style="font-size:9px;">⭐ Key</td><td>${fmt(symbol,a.FIB.f500)}</td></tr>
+              <tr class="fib-near"><td>61.8%</td><td style="font-size:9px;">⭐ Gold</td><td>${fmt(symbol,a.FIB.f618)}</td></tr>
+              <tr><td>78.6%</td><td style="font-size:9px;">Deep</td><td>${fmt(symbol,a.FIB.f786)}</td></tr>
+              <tr><td>100%</td><td style="font-size:9px;">${a.FIB.trend==='up'?'Lo':'Hi'}</td><td>${fmt(symbol,a.FIB.f100)}</td></tr>
+            </table>
+          </div>` : '<div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:14px;text-align:center;font-family:\'Share Tech Mono\',monospace;font-size:10px;color:var(--muted);">No FIB data</div>'}
         </div>
       </div>
 
-      <!-- FIBONACCI -->
-      ${a.FIB ? `
-      <div class="sec-title">🔢 FIBONACCI RETRACEMENT</div>
-      <table class="fib-table">
-        <tr><td>0%</td><td>${a.FIB.trend==='up'?'Swing High':'Swing Low'}</td><td>${fmt(symbol,a.FIB.f0)}</td></tr>
-        <tr><td>23.6%</td><td>Weak retracement</td><td>${fmt(symbol,a.FIB.f236)}</td></tr>
-        <tr><td>38.2%</td><td>Moderate support</td><td>${fmt(symbol,a.FIB.f382)}</td></tr>
-        <tr class="fib-near"><td>50.0%</td><td>⭐ Key level</td><td>${fmt(symbol,a.FIB.f500)}</td></tr>
-        <tr><td>61.8%</td><td>⭐ Golden ratio</td><td>${fmt(symbol,a.FIB.f618)}</td></tr>
-        <tr><td>78.6%</td><td>Deep retracement</td><td>${fmt(symbol,a.FIB.f786)}</td></tr>
-        <tr><td>100%</td><td>${a.FIB.trend==='up'?'Swing Low':'Swing High'}</td><td>${fmt(symbol,a.FIB.f100)}</td></tr>
-      </table>` : ''}
-
-      <!-- S/R -->
-      <div class="sec-title">📊 SUPPORT & RESISTANCE <span class="badge real">${src}</span></div>
-      <div>
-        <div class="sr-item"><span class="sr-type R">RESISTANCE 2</span><span class="sr-price">${fmt(symbol,a.r2)}</span><div class="sr-dots"><div class="dot on"></div><div class="dot on"></div><div class="dot"></div></div></div>
-        <div class="sr-div"></div>
-        <div class="sr-item"><span class="sr-type R">RESISTANCE 1</span><span class="sr-price">${fmt(symbol,a.r1)}</span><div class="sr-dots"><div class="dot on"></div><div class="dot on"></div><div class="dot on"></div></div></div>
-        <div class="sr-div"></div>
-        <div class="sr-item" style="background:rgba(0,200,240,.06);border-radius:5px;padding:5px 8px;">
-          <span style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--accent);">▶ PRICE NOW</span>
-          <span class="sr-price" style="color:var(--accent);">${fmt(symbol,a.entry)}</span><div></div>
+      <!-- S/R + SUPPLY/DEMAND side by side -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:4px;">
+        <div>
+          <div class="sec-title" style="margin-top:16px;">📊 SUPPORT & RESISTANCE ${a.srBullish!==null?`<span class="badge ${a.srBullish?'real':''}" style="${a.srBullish?'':'background:rgba(255,51,80,.12);color:var(--danger);border:1px solid rgba(255,51,80,.25);'}">${a.srBullish?'✅ NEAR SUP':'⚠️ NEAR RES'}</span>`:''}</div>
+          <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 12px;">
+            <div class="sr-item"><span class="sr-type R" style="font-size:8px;">R2</span><span class="sr-price" style="font-size:11px;">${fmt(symbol,a.r2)}</span></div>
+            <div class="sr-div"></div>
+            <div class="sr-item"><span class="sr-type R" style="font-size:8px;">R1</span><span class="sr-price" style="font-size:11px;">${fmt(symbol,a.r1)}</span></div>
+            <div class="sr-div"></div>
+            <div class="sr-item" style="background:rgba(0,200,240,.06);border-radius:4px;padding:4px 6px;">
+              <span style="font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--accent);">▶ NOW</span>
+              <span class="sr-price" style="color:var(--accent);font-size:11px;">${fmt(symbol,a.entry)}</span>
+            </div>
+            <div class="sr-div"></div>
+            <div class="sr-item"><span class="sr-type S" style="font-size:8px;">S1</span><span class="sr-price" style="font-size:11px;">${fmt(symbol,a.s1)}</span></div>
+            <div class="sr-div"></div>
+            <div class="sr-item"><span class="sr-type S" style="font-size:8px;">S2</span><span class="sr-price" style="font-size:11px;">${fmt(symbol,a.s2)}</span></div>
+          </div>
         </div>
-        <div class="sr-div"></div>
-        <div class="sr-item"><span class="sr-type S">SUPPORT 1</span><span class="sr-price">${fmt(symbol,a.s1)}</span><div class="sr-dots"><div class="dot on"></div><div class="dot on"></div><div class="dot on"></div></div></div>
-        <div class="sr-div"></div>
-        <div class="sr-item"><span class="sr-type S">SUPPORT 2</span><span class="sr-price">${fmt(symbol,a.s2)}</span><div class="sr-dots"><div class="dot on"></div><div class="dot on"></div><div class="dot"></div></div></div>
+        <div>
+          <div class="sec-title" style="margin-top:16px;">🏭 SUPPLY & DEMAND ${a.sdBullish!==null?`<span class="badge ${a.sdBullish?'real':''}" style="${a.sdBullish?'':'background:rgba(255,51,80,.12);color:var(--danger);border:1px solid rgba(255,51,80,.25);'}">${a.sdBullish?'✅ DEMAND':'⚠️ SUPPLY'}</span>`:''}</div>
+          <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 12px;">
+            <div style="margin-bottom:8px;">
+              <div style="font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--danger);letter-spacing:2px;margin-bottom:4px;">SUPPLY ZONE ${a.sdBullish===false?'⚠️ PRICE HERE':''}</div>
+              <div style="font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--text);">${fmt(symbol,a.supplyLow)}</div>
+              <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--muted);">— ${fmt(symbol,a.supplyHigh)}</div>
+            </div>
+            <div style="height:1px;background:var(--border);margin:8px 0;"></div>
+            <div style="margin-bottom:8px;text-align:center;font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--accent);">▶ PRICE: ${fmt(symbol,a.entry)}</div>
+            <div style="height:1px;background:var(--border);margin:8px 0;"></div>
+            <div>
+              <div style="font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--accent2);letter-spacing:2px;margin-bottom:4px;">DEMAND ZONE ${a.sdBullish===true?'✅ PRICE HERE':''}</div>
+              <div style="font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--text);">${fmt(symbol,a.demandLow)}</div>
+              <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--muted);">— ${fmt(symbol,a.demandHigh)}</div>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <!-- SUPPLY/DEMAND -->
-      <div class="sec-title">🏭 SUPPLY & DEMAND ZONES</div>
-      <div class="zone sup"><div><div class="zone-lbl">SUPPLY ZONE</div><div class="zone-rng">${fmt(symbol,a.supplyLow)} — ${fmt(symbol,a.supplyHigh)}</div></div><span class="i-sig bear">SELL ZONE</span></div>
-      <div class="zone dem"><div><div class="zone-lbl">DEMAND ZONE</div><div class="zone-rng">${fmt(symbol,a.demandLow)} — ${fmt(symbol,a.demandHigh)}</div></div><span class="i-sig bull">BUY ZONE</span></div>
-
-      <!-- CANDLE PATTERNS -->
-      <div class="sec-title">🕯️ CANDLESTICK PATTERNS <span class="badge real">${src}</span></div>
-      <div class="pat-list">
-        ${a.canPat.map(([n,t])=>`
-          <div class="pat-item">
-            <span class="pat-name">${n}</span>
-            <span class="i-sig ${t==='bull'?'bull':t==='bear'?'bear':'side'}">${t==='bull'?'BULLISH':t==='bear'?'BEARISH':'NEUTRAL'}</span>
-          </div>`).join('')}
-      </div>
-
-      <!-- CHART PATTERN -->
-      <div class="sec-title">📐 CHART PATTERN</div>
-      <div class="cpat-box">
-        <div class="cpat-name">📐 ${a.chPat[0]}</div>
-        <div class="cpat-desc">${a.chPat[1]}</div>
+      <!-- CANDLESTICK + CHART PATTERN side by side -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
+        <div>
+          <div class="sec-title" style="margin-top:16px;">🕯️ CANDLESTICK PATTERNS ${a.canBullish!==null?`<span class="badge ${a.canBullish?'real':''}" style="${a.canBullish?'':'background:rgba(255,51,80,.12);color:var(--danger);border:1px solid rgba(255,51,80,.25);'}">${a.canBullish?'✅ BULLISH':'⚠️ BEARISH'}</span>`:''}</div>
+          <div class="pat-list" style="margin-bottom:0;">
+            ${a.canPat.map(([n,t])=>`
+              <div class="pat-item">
+                <span class="pat-name" style="font-size:10px;">${n}</span>
+                <span class="i-sig ${t==='bull'?'bull':t==='bear'?'bear':'side'}">${t==='bull'?'BULL':t==='bear'?'BEAR':'NEUT'}</span>
+              </div>`).join('')}
+          </div>
+        </div>
+        <div>
+          <div class="sec-title" style="margin-top:16px;">📐 CHART PATTERN ${a.chBullish!==null?`<span class="badge ${a.chBullish?'real':''}" style="${a.chBullish?'':'background:rgba(255,51,80,.12);color:var(--danger);border:1px solid rgba(255,51,80,.25);'}">${a.chBullish?'✅ BULLISH':'⚠️ BEARISH'}</span>`:''}</div>
+          <div class="cpat-box" style="margin-bottom:0;height:calc(100% - 32px);box-sizing:border-box;">
+            <div class="cpat-name">📐 ${a.chPat[0]}</div>
+            <div class="cpat-desc">${a.chPat[1]}</div>
+          </div>
+        </div>
       </div>
 
       <div style="margin-top:16px;padding:10px 14px;background:rgba(240,192,64,.04);border:1px solid rgba(240,192,64,.15);border-radius:8px;">
@@ -1327,7 +1435,6 @@ async function runAnalysis() {
       <div style="font-size:32px;margin-bottom:10px;">⚠️</div>
       <div style="font-family:'Orbitron',monospace;font-size:12px;letter-spacing:2px;color:var(--danger);margin-bottom:8px;">ERROR</div>
       <div style="font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--muted);">${err.message}</div>
-      ${!FINNHUB_KEY&&!symbol.endsWith('USDT')?`<div style="margin-top:12px;font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--accent4);">Masukkan Finnhub API Key di banner atas</div>`:''}
     </div>`;
   }
 
