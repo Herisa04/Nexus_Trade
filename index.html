@@ -458,16 +458,16 @@ select:focus{border-color:var(--accent);}
 
 <script>
 // ================================================================
-//  NEXUS TRADE v4.2 — FINNHUB EDITION
-//  CHANGES FROM v4.1:
-//  - Migrated Twelve Data → Finnhub API (forex/candle endpoint)
-//  - Symbol mapping: OANDA:EUR_USD format
-//  - 4H candle merging from 1H data
-//  - Finnhub API key hardcoded (no banner needed)
-//  - Ticker uses Finnhub quote with % change
+//  NEXUS TRADE v4.5 — TWELVE DATA EDITION
+//  DATA SOURCES:
+//  - Crypto  : Binance (free, real-time)
+//  - Forex   : Twelve Data (CORS-native, no proxy needed)
+//  - Metals  : Twelve Data
+//  - Indices : Twelve Data
+//  SCORING ENGINE:
+//  - 11 core indicators → determine BUY/SELL/WAIT signal
+//  - 5 confluence items → adjust confidence % only
 // ================================================================
-
-// API KEY — Finnhub (hardcoded)
 
 
 
@@ -908,7 +908,7 @@ function fmtT(sym,p){
 // ================================================================
 //  DATA FETCHING
 // ================================================================
-const binTF = {'1min':'1m','3min':'3m','5min':'5min','15min':'15m','30min':'30m','1h':'1h','4h':'4h','1day':'1d'};
+const binTF = {'1min':'1m','3min':'3m','5min':'5m','15min':'15m','30min':'30m','1h':'1h','4h':'4h','1day':'1d'};
 const twTF  = {'1min':'1min','3min':'3min','5min':'5min','15min':'15min','30min':'30min','1h':'1h','4h':'4h','1day':'1day'};
 
 // Twelve Data API Key — loaded from localStorage or hardcoded
@@ -966,7 +966,7 @@ async function fetchBinCandles(sym, tf) {
 
 async function fetchTwCandles(sym, tf) {
   if(!TWELVE_KEY||TWELVE_KEY==='MASUKKAN_TWELVE_DATA_KEY_DISINI')
-    throw new Error('Twelve Data API Key belum diisi! Buka file HTML dan ganti MASUKKAN_TWELVE_DATA_KEY_DISINI');
+    throw new Error('Twelve Data API Key belum diisi! Masukkan key di banner atas lalu klik APPLY.');
   const url = `https://api.twelvedata.com/time_series?symbol=${encodeURIComponent(sym)}&interval=${twTF[tf]||'1h'}&outputsize=300&apikey=${TWELVE_KEY}`;
   const res = await fetch(url);
   if(!res.ok) throw new Error(`Twelve Data HTTP error: ${res.status}`);
@@ -1077,11 +1077,17 @@ async function fetchForexTickers() {
       `https://api.twelvedata.com/price?symbol=${encodeURIComponent(symbols)}&apikey=${TWELVE_KEY}`
     );
     const d = await res.json();
-    // Response: jika 1 symbol → object langsung, jika batch → keyed by symbol
-    for (const sym of MARQUEE_FOREX) {
-      const item = MARQUEE_FOREX.length === 1 ? d : d[sym];
-      if(item?.price && !item?.code) {
-        tickerData[sym] = { price: fmtT(sym, +item.price) };
+    // Twelve Data batch: response keyed by symbol string e.g. "XAU/USD"
+    // Single symbol: returns {price:"..."} directly
+    if(MARQUEE_FOREX.length === 1) {
+      const sym = MARQUEE_FOREX[0];
+      if(d.price && !d.code) tickerData[sym] = { price: fmtT(sym, +d.price) };
+    } else {
+      for(const sym of MARQUEE_FOREX) {
+        const item = d[sym];
+        if(item?.price && !item?.code) {
+          tickerData[sym] = { price: fmtT(sym, +item.price) };
+        }
       }
     }
   } catch(e) {}
@@ -1105,7 +1111,6 @@ async function runAnalysis() {
 
   btn.disabled=true;
   document.getElementById('spinner').classList.add('show');
-  const isYahoo = false; // now using Twelve Data for all non-crypto
   document.getElementById('spinSub').textContent = isCrypto
     ? 'Fetching Binance candles...'
     : 'Fetching Twelve Data candles...';
