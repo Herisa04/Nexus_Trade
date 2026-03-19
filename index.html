@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NEXUS TRADE — Professional Market Analyzer v4.2 Finnhub</title>
+<title>NEXUS TRADE — Professional Market Analyzer v4.5 Twelve Data</title>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -249,11 +249,19 @@ select:focus{border-color:var(--accent);}
       <div class="logo-icon">⚡</div>
       <div>
         <div class="logo-text">NEXUS TRADE</div>
-        <div class="logo-sub">PROFESSIONAL MARKET ANALYZER v4.2 — FINNHUB EDITION</div>
+        <div class="logo-sub">PROFESSIONAL MARKET ANALYZER v4.5 — TWELVE DATA EDITION</div>
       </div>
     </div>
     <div class="live-badge"><div class="live-dot"></div>LIVE ENGINE</div>
   </header>
+
+  <!-- TWELVE DATA API KEY BANNER -->
+  <div class="api-banner" id="apiBanner">
+    <span class="api-label">🔑 TWELVE DATA API KEY</span>
+    <input class="api-input" id="apiKeyInput" type="text" placeholder="Masukkan Twelve Data API Key kamu..." autocomplete="off">
+    <button class="api-btn" onclick="setTwelveKey()">✓ APPLY</button>
+    <span class="api-status" id="apiStatus" style="color:var(--muted);">⚪ NOT SET — Daftar: twelvedata.com/register</span>
+  </div>
 
 
   <div class="controls">
@@ -266,20 +274,20 @@ select:focus{border-color:var(--accent);}
           <option value="SOLUSDT">SOL/USD — Solana</option>
           <option value="XRPUSDT">XRP/USD — Ripple</option>
         </optgroup>
-        <optgroup label="— METALS (Yahoo Finance) —">
+        <optgroup label="— METALS (Twelve Data) —">
           <option value="XAU/USD">XAU/USD — Gold</option>
           <option value="XAG/USD">XAG/USD — Silver</option>
           <option value="XPT/USD">XPT/USD — Platinum</option>
           <option value="XPD/USD">XPD/USD — Palladium</option>
           <option value="XCU/USD">XCU/USD — Copper</option>
         </optgroup>
-        <optgroup label="— FOREX MAJORS (Finnhub) —">
+        <optgroup label="— FOREX MAJORS (Twelve Data) —">
           <option value="EUR/USD">EUR/USD</option><option value="GBP/USD">GBP/USD</option>
           <option value="USD/JPY">USD/JPY</option><option value="USD/CHF">USD/CHF</option>
           <option value="AUD/USD">AUD/USD</option><option value="USD/CAD">USD/CAD</option>
           <option value="NZD/USD">NZD/USD</option>
         </optgroup>
-        <optgroup label="— FOREX CROSSES (Finnhub) —">
+        <optgroup label="— FOREX CROSSES (Twelve Data) —">
           <option value="EUR/GBP">EUR/GBP</option><option value="EUR/JPY">EUR/JPY</option>
           <option value="EUR/CHF">EUR/CHF</option><option value="EUR/AUD">EUR/AUD</option>
           <option value="EUR/CAD">EUR/CAD</option><option value="EUR/NZD">EUR/NZD</option>
@@ -292,7 +300,7 @@ select:focus{border-color:var(--accent);}
           <option value="NZD/JPY">NZD/JPY</option><option value="NZD/CHF">NZD/CHF</option>
           <option value="NZD/CAD">NZD/CAD</option>
         </optgroup>
-        <optgroup label="— INDICES (Yahoo Finance) —">
+        <optgroup label="— INDICES (Twelve Data) —">
           <option value="IXIC">NASDAQ Composite</option>
           <option value="SPX">S&P 500</option>
           <option value="DJI">Dow Jones</option>
@@ -460,7 +468,6 @@ select:focus{border-color:var(--accent);}
 // ================================================================
 
 // API KEY — Finnhub (hardcoded)
-const FINNHUB_KEY = 'd6r5t0hr01qgdhqd9c9gd6r5t0hr01qgdhqd9ca0';
 
 
 
@@ -901,151 +908,82 @@ function fmtT(sym,p){
 // ================================================================
 //  DATA FETCHING
 // ================================================================
-const binTF={'1min':'1m','3min':'3m','5min':'5m','15min':'15m','30min':'30m','1h':'1h','4h':'4h','1day':'1d'};
+const binTF = {'1min':'1m','3min':'3m','5min':'5min','15min':'15m','30min':'30m','1h':'1h','4h':'4h','1day':'1d'};
+const twTF  = {'1min':'1min','3min':'3min','5min':'5min','15min':'15min','30min':'30min','1h':'1h','4h':'4h','1day':'1day'};
+
+// Twelve Data API Key — loaded from localStorage or hardcoded
+let TWELVE_KEY = localStorage.getItem('twelve_key') || 'MASUKKAN_TWELVE_DATA_KEY_DISINI';
 
 // ================================================================
-//  YAHOO FINANCE SYMBOL MAP
-//  Forex: use =X suffix  |  Metals: futures =F  |  Indices: ^ prefix
+//  TWELVE DATA API BANNER
 // ================================================================
-const yahooSymMap = {
-  // Metals
-  'XAU/USD':'GC=F','XAG/USD':'SI=F','XPT/USD':'PL=F','XPD/USD':'PA=F','XCU/USD':'HG=F',
-  // Forex Majors
-  'EUR/USD':'EURUSD=X','GBP/USD':'GBPUSD=X','USD/JPY':'JPY=X',
-  'USD/CHF':'CHF=X','AUD/USD':'AUDUSD=X','USD/CAD':'CAD=X','NZD/USD':'NZDUSD=X',
-  // Forex Crosses
-  'EUR/GBP':'EURGBP=X','EUR/JPY':'EURJPY=X','EUR/CHF':'EURCHF=X',
-  'EUR/AUD':'EURAUD=X','EUR/CAD':'EURCAD=X','EUR/NZD':'EURNZD=X',
-  'GBP/JPY':'GBPJPY=X','GBP/CHF':'GBPCHF=X','GBP/AUD':'GBPAUD=X',
-  'GBP/CAD':'GBPCAD=X','GBP/NZD':'GBPNZD=X',
-  'AUD/JPY':'AUDJPY=X','AUD/CHF':'AUDCHF=X','AUD/CAD':'AUDCAD=X','AUD/NZD':'AUDNZD=X',
-  'CAD/JPY':'CADJPY=X','CAD/CHF':'CADCHF=X','CHF/JPY':'CHFJPY=X',
-  'NZD/JPY':'NZDJPY=X','NZD/CHF':'NZDCHF=X','NZD/CAD':'NZDCAD=X',
-  // Indices
-  'IXIC':'^IXIC','SPX':'^GSPC','DJI':'^DJI','FTSE':'^FTSE','NI225':'^N225'
-};
-
-// Yahoo interval & range map
-const yahooTF = {
-  '1min':'1m','3min':'5m','5min':'5m','15min':'15m',
-  '30min':'30m','1h':'60m','4h':'1h','1day':'1d'
-};
-const yahooRange = {
-  '1min':'1d','3min':'5d','5min':'5d','15min':'5d',
-  '30min':'1mo','1h':'1mo','4h':'3mo','1day':'1y'
-};
-
-// CORS Proxy fallback chain — try each until one works
-const CORS_PROXIES = [
-  url => `https://corsproxy.io/?${encodeURIComponent(url)}`,
-  url => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,
-  url => `https://cors-anywhere.herokuapp.com/${url}`,
-];
-
-async function fetchWithProxy(targetUrl) {
-  for (const makeProxy of CORS_PROXIES) {
-    try {
-      const proxyUrl = makeProxy(targetUrl);
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 8000);
-      let res;
-      try {
-        res = await fetch(proxyUrl, {signal: controller.signal});
-      } finally {
-        clearTimeout(timer);
-      }
-      if (!res.ok) continue;
-      const text = await res.text();
-      // allorigins returns {contents: "..."}, others return raw JSON
-      if (text.includes('"contents"')) {
-        const wrapper = JSON.parse(text);
-        return wrapper.contents || text;
-      }
-      return text;
-    } catch(e) { continue; }
+function setTwelveKey() {
+  const val = document.getElementById('apiKeyInput').value.trim();
+  if(!val || val.length < 5) {
+    alert('⚠️ API Key tidak valid. Copy dari twelvedata.com/account/api-keys');
+    return;
   }
-  throw new Error('Semua proxy gagal — coba lagi dalam beberapa saat.');
+  TWELVE_KEY = val;
+  localStorage.setItem('twelve_key', val);
+  updateBannerStatus(true);
+  fetchForexTickers();
 }
-
-// For 4h: merge hourly candles into 4H
-function merge4H(data) {
-  const {opens,highs,lows,closes} = data;
-  const o=[],h=[],l=[],c=[];
-  for(let i=0;i+3<opens.length;i+=4){
-    o.push(opens[i]);
-    h.push(Math.max(highs[i],highs[i+1],highs[i+2],highs[i+3]));
-    l.push(Math.min(lows[i],lows[i+1],lows[i+2],lows[i+3]));
-    c.push(closes[i+3]);
+function updateBannerStatus(active) {
+  const status = document.getElementById('apiStatus');
+  const banner = document.getElementById('apiBanner');
+  if(active) {
+    status.textContent  = '✅ KEY ACTIVE — Forex, Metals & Indices siap dianalisis';
+    status.style.color  = 'var(--accent2)';
+    banner.style.borderColor = 'rgba(0,232,122,.3)';
+    banner.style.background  = 'rgba(0,232,122,.04)';
+  } else {
+    status.textContent  = '⚪ NOT SET — Daftar: twelvedata.com/register';
+    status.style.color  = 'var(--muted)';
+    banner.style.borderColor = '';
+    banner.style.background  = '';
   }
-  return {opens:o,highs:h,lows:l,closes:c};
 }
+// Restore saved key on load
+window.addEventListener('DOMContentLoaded', () => {
+  const saved = localStorage.getItem('twelve_key');
+  if(saved && saved !== 'MASUKKAN_TWELVE_DATA_KEY_DISINI') {
+    TWELVE_KEY = saved;
+    document.getElementById('apiKeyInput').value = saved;
+    updateBannerStatus(true);
+  }
+});
+
+const METALS  = ['XAU/USD','XAG/USD','XPT/USD','XPD/USD','XCU/USD'];
+const INDICES = ['IXIC','SPX','DJI','FTSE','NI225'];
 
 async function fetchBinCandles(sym, tf) {
   const res = await fetch(`https://api.binance.com/api/v3/klines?symbol=${sym}&interval=${binTF[tf]||'1h'}&limit=300`);
   if(!res.ok) throw new Error(`Binance API error: ${res.status}`);
   const d = await res.json();
-  if(!Array.isArray(d)||!d.length) throw new Error('Binance returned empty data');
+  if(!Array.isArray(d)||!d.length) throw new Error('Binance: data kosong');
   return {opens:d.map(x=>+x[1]),highs:d.map(x=>+x[2]),lows:d.map(x=>+x[3]),closes:d.map(x=>+x[4])};
 }
 
-// ----------------------------------------------------------------
-//  YAHOO FINANCE — ALL non-crypto (Forex + Metals + Indices)
-// ----------------------------------------------------------------
-async function fetchYahooCandles(sym, tf) {
-  const yhSym = yahooSymMap[sym];
-  if(!yhSym) throw new Error(`Symbol ${sym} tidak tersedia.`);
-
-  const interval = yahooTF[tf]  || '60m';
-  const range    = yahooRange[tf] || '1mo';
-  const yahooUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yhSym)}?interval=${interval}&range=${range}&includePrePost=false`;
-
-  let rawText;
-  try { rawText = await fetchWithProxy(yahooUrl); }
-  catch(e) { throw new Error(`Gagal fetch data ${sym}: ${e.message}`); }
-
-  let d;
-  try { d = JSON.parse(rawText); }
-  catch(e) { throw new Error(`Yahoo Finance: Gagal parse data untuk ${sym}.`); }
-
-  const result = d?.chart?.result?.[0];
-  if(!result) {
-    const errMsg = d?.chart?.error?.description || 'Tidak ada data';
-    throw new Error(`Yahoo Finance (${sym}): ${errMsg}`);
-  }
-
-  const q = result.indicators?.quote?.[0];
-  if(!q) throw new Error(`Yahoo Finance: Format data tidak valid untuk ${sym}.`);
-
-  const opens  = q.open  || [];
-  const highs  = q.high  || [];
-  const lows   = q.low   || [];
-  const closes = q.close || [];
-
-  // Filter null candles
-  const valid = opens.map((_,i)=>i).filter(i=>
-    opens[i]!=null && highs[i]!=null && lows[i]!=null && closes[i]!=null
-  );
-  if(valid.length < 10) throw new Error(`Yahoo Finance: Data terlalu sedikit untuk ${sym} di TF ${tf}. Coba TF yang lebih besar.`);
-
-  let out = {
-    opens:  valid.map(i=>opens[i]),
-    highs:  valid.map(i=>highs[i]),
-    lows:   valid.map(i=>lows[i]),
-    closes: valid.map(i=>closes[i])
+async function fetchTwCandles(sym, tf) {
+  if(!TWELVE_KEY||TWELVE_KEY==='MASUKKAN_TWELVE_DATA_KEY_DISINI')
+    throw new Error('Twelve Data API Key belum diisi! Buka file HTML dan ganti MASUKKAN_TWELVE_DATA_KEY_DISINI');
+  const url = `https://api.twelvedata.com/time_series?symbol=${encodeURIComponent(sym)}&interval=${twTF[tf]||'1h'}&outputsize=300&apikey=${TWELVE_KEY}`;
+  const res = await fetch(url);
+  if(!res.ok) throw new Error(`Twelve Data HTTP error: ${res.status}`);
+  const d = await res.json();
+  if(d.status==='error') throw new Error(`Twelve Data: ${d.message}`);
+  if(!d.values?.length)  throw new Error(`Twelve Data: Data kosong untuk ${sym}. Cek API Key atau symbol.`);
+  const v = [...d.values].reverse();
+  return {
+    opens:  v.map(x=>+x.open),
+    highs:  v.map(x=>+x.high),
+    lows:   v.map(x=>+x.low),
+    closes: v.map(x=>+x.close)
   };
-
-  if(tf==='4h') out = merge4H(out);
-  return out;
 }
 
-// ----------------------------------------------------------------
-//  ROUTER
-// ----------------------------------------------------------------
-const METALS  = ['XAU/USD','XAG/USD','XPT/USD','XPD/USD','XCU/USD'];
-const INDICES = ['IXIC','SPX','DJI','FTSE','NI225'];
-
 async function fetchNonCryptoCandles(sym, tf) {
-  return await fetchYahooCandles(sym, tf);
+  return await fetchTwCandles(sym, tf);
 }
 
 // ================================================================
@@ -1131,35 +1069,22 @@ async function fetchCryptoTick() {
 }
 
 async function fetchForexTickers() {
-  // Fetch semua forex+metals ticker via Yahoo Finance (proxy chain)
-  const tickerSyms = [
-    {label:'XAU/USD', yahoo:'GC=F'},
-    {label:'EUR/USD', yahoo:'EURUSD=X'},
-    {label:'GBP/USD', yahoo:'GBPUSD=X'},
-    {label:'USD/JPY', yahoo:'JPY=X'},
-    {label:'AUD/USD', yahoo:'AUDUSD=X'},
-    {label:'USD/CAD', yahoo:'CAD=X'},
-    {label:'GBP/JPY', yahoo:'GBPJPY=X'},
-    {label:'EUR/JPY', yahoo:'EURJPY=X'},
-  ];
-
-  await Promise.allSettled(tickerSyms.map(async ({label, yahoo}) => {
-    try {
-      const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahoo)}?interval=60m&range=2d`;
-      const raw = await fetchWithProxy(url);
-      const d   = JSON.parse(raw);
-      const q   = d?.chart?.result?.[0]?.indicators?.quote?.[0];
-      if(q?.close?.length >= 2) {
-        const closes = q.close.filter(x=>x!=null);
-        if(closes.length >= 2) {
-          const price = closes[closes.length-1];
-          const prev  = closes[closes.length-2];
-          tickerData[label] = { price: fmtT(label, price), chg: prev>0?((price-prev)/prev)*100:0 };
-        }
+  // Twelve Data batch price — semua dalam 1 request, hemat kredit
+  if(!TWELVE_KEY || TWELVE_KEY==='MASUKKAN_TWELVE_DATA_KEY_DISINI') return;
+  const symbols = MARQUEE_FOREX.join(',');
+  try {
+    const res = await fetch(
+      `https://api.twelvedata.com/price?symbol=${encodeURIComponent(symbols)}&apikey=${TWELVE_KEY}`
+    );
+    const d = await res.json();
+    // Response: jika 1 symbol → object langsung, jika batch → keyed by symbol
+    for (const sym of MARQUEE_FOREX) {
+      const item = MARQUEE_FOREX.length === 1 ? d : d[sym];
+      if(item?.price && !item?.code) {
+        tickerData[sym] = { price: fmtT(sym, +item.price) };
       }
-    } catch(e) {}
-  }));
-
+    }
+  } catch(e) {}
   buildMarquee();
 }
 
@@ -1180,17 +1105,16 @@ async function runAnalysis() {
 
   btn.disabled=true;
   document.getElementById('spinner').classList.add('show');
-  const isYahoo = METALS.includes(symbol) || INDICES.includes(symbol);
+  const isYahoo = false; // now using Twelve Data for all non-crypto
   document.getElementById('spinSub').textContent = isCrypto
     ? 'Fetching Binance candles...'
-    : isYahoo ? 'Fetching Yahoo Finance candles...'
-    : 'Fetching Finnhub candles...';
+    : 'Fetching Twelve Data candles...';
 
   try {
     const candles = isCrypto ? await fetchBinCandles(symbol,tf) : await fetchNonCryptoCandles(symbol,tf);
     document.getElementById('spinSub').textContent='Running weighted analysis...';
     const a = buildAnalysis(candles,symbol);
-    const src = isCrypto ? 'BINANCE' : 'YAHOO FINANCE';
+    const src = isCrypto ? 'BINANCE' : 'TWELVE DATA';
 
     // MTF update
     ['M15','M30','H1','H4','D1','BIAS'].forEach(t=>{
