@@ -3,14 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NEXUS TRADE — Professional Market Analyzer v4.5 Twelve Data</title>
+<title>NEXUS TRADE — Professional Market Analyzer v4.5</title>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{
   --bg:#060a12;--bg2:#0a0f1c;--bg3:#0e1524;--panel:#0c1422;
   --border:#1a2840;--accent:#00c8f0;--accent2:#00e87a;
   --accent4:#f0c040;--danger:#ff3350;--warn:#ff8c00;
-  --text:#dce8ff;--muted:#3d5570;--glow:0 0 24px rgba(0,200,240,0.25);
+  --text:#eef4ff;--muted:#5a7a9a;--glow:0 0 24px rgba(0,200,240,0.25);
 }
 *{margin:0;padding:0;box-sizing:border-box;}
 body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh;overflow-x:hidden;}
@@ -59,8 +59,8 @@ select:focus{border-color:var(--accent);}
 .tf-tab{background:var(--bg3);border:1px solid var(--border);color:var(--muted);padding:3px 9px;border-radius:4px;font-family:'Share Tech Mono',monospace;font-size:10px;cursor:pointer;transition:all .2s;}
 .tf-tab:hover,.tf-tab.active{border-color:var(--accent);color:var(--accent);}
 .tf-tab.active{background:rgba(0,200,240,.12);}
-.chart-wrap{width:100%;height:650px;position:relative;}
-.chart-wrap iframe{width:100%;height:100%;border:none;}
+.chart-wrap{width:100%;height:500px;position:relative;}
+.chart-wrap iframe{width:100%;height:500px;border:none;}
 .chart-load{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:var(--bg3);flex-direction:column;gap:10px;}
 .chart-load-txt{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:2px;}
 
@@ -73,8 +73,8 @@ select:focus{border-color:var(--accent);}
 /* SCORE BARS */
 .score-cats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px;}
 .score-cat{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center;}
-.sc-lbl{font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--muted);margin-bottom:8px;}
-.sc-num{font-family:'Orbitron',monospace;font-size:22px;font-weight:900;margin-bottom:3px;}
+.sc-lbl{font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--muted);margin-bottom:8px;}
+.sc-num{font-family:'Orbitron',monospace;font-size:24px;font-weight:900;margin-bottom:3px;}
 .sc-num.bull{color:var(--accent2);}
 .sc-num.bear{color:var(--danger);}
 .sc-num.neut{color:var(--muted);}
@@ -94,48 +94,48 @@ select:focus{border-color:var(--accent);}
 .signal-box.buy::before{background:linear-gradient(90deg,var(--accent2),transparent);}
 .signal-box.sell::before{background:linear-gradient(90deg,var(--danger),transparent);}
 .signal-box.wait::before{background:linear-gradient(90deg,var(--accent4),transparent);}
-.sig-lbl{font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:3px;color:var(--muted);margin-bottom:6px;}
-.sig-dir{font-family:'Orbitron',monospace;font-size:36px;font-weight:900;margin-bottom:6px;letter-spacing:2px;}
+.sig-lbl{font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--muted);margin-bottom:6px;}
+.sig-dir{font-family:'Orbitron',monospace;font-size:38px;font-weight:900;margin-bottom:6px;letter-spacing:2px;}
 .sig-dir.buy{color:var(--accent2);text-shadow:0 0 20px rgba(0,232,122,.4);}
 .sig-dir.sell{color:var(--danger);text-shadow:0 0 20px rgba(255,51,80,.4);}
 .sig-dir.wait{color:var(--accent4);text-shadow:0 0 20px rgba(240,192,64,.4);}
-.sig-meta{font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--muted);margin-bottom:10px;}
+.sig-meta{font-family:'Share Tech Mono',monospace;font-size:12px;color:var(--muted);margin-bottom:10px;}
 .conf-wrap{display:flex;align-items:center;gap:10px;}
-.conf-bar{flex:1;height:5px;background:var(--border);border-radius:3px;overflow:hidden;}
+.conf-bar{flex:1;height:6px;background:var(--border);border-radius:3px;overflow:hidden;}
 .conf-fill{height:100%;border-radius:3px;transition:width 1s ease;}
 .buy .conf-fill{background:linear-gradient(90deg,var(--accent2),#009955);}
 .sell .conf-fill{background:linear-gradient(90deg,var(--danger),#aa1133);}
 .wait .conf-fill{background:linear-gradient(90deg,var(--accent4),#aa8800);}
-.conf-pct{font-family:'Orbitron',monospace;font-size:13px;font-weight:700;min-width:40px;text-align:right;}
+.conf-pct{font-family:'Orbitron',monospace;font-size:14px;font-weight:700;min-width:44px;text-align:right;}
 .buy .conf-pct{color:var(--accent2);}
 .sell .conf-pct{color:var(--danger);}
 .wait .conf-pct{color:var(--accent4);}
 
 /* TRADE LEVELS - SINGLE */
 .trade-levels{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:16px;}
-.lv-card{background:var(--bg3);border-radius:9px;padding:13px;text-align:center;border:1px solid var(--border);}
-.lv-lbl{font-family:'Share Tech Mono',monospace;font-size:8px;letter-spacing:2px;color:var(--muted);margin-bottom:6px;}
-.lv-val{font-family:'Orbitron',monospace;font-size:13px;font-weight:700;}
+.lv-card{background:var(--bg3);border-radius:9px;padding:14px;text-align:center;border:1px solid var(--border);}
+.lv-lbl{font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:2px;color:var(--muted);margin-bottom:6px;}
+.lv-val{font-family:'Orbitron',monospace;font-size:15px;font-weight:700;}
 .lv-val.e{color:var(--accent);}
 .lv-val.t1{color:var(--accent2);}
 .lv-val.t2{color:#00aa55;}
 .lv-val.s{color:var(--danger);}
-.lv-sub{font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--muted);margin-top:3px;}
+.lv-sub{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--muted);margin-top:3px;}
 
-.rr-box{background:rgba(240,192,64,.07);border:1px solid rgba(240,192,64,.2);border-radius:8px;padding:9px 14px;display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
-.rr-lbl{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--muted);}
-.rr-val{font-family:'Orbitron',monospace;font-size:15px;color:var(--accent4);}
+.rr-box{background:rgba(240,192,64,.07);border:1px solid rgba(240,192,64,.2);border-radius:8px;padding:10px 16px;display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
+.rr-lbl{font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--muted);}
+.rr-val{font-family:'Orbitron',monospace;font-size:16px;color:var(--accent4);}
 
 /* SECTION TITLE */
-.sec-title{font-family:'Orbitron',monospace;font-size:9px;color:var(--accent);letter-spacing:3px;margin:16px 0 10px;display:flex;align-items:center;gap:8px;}
-.badge{font-family:'Share Tech Mono',monospace;font-size:8px;padding:2px 6px;border-radius:3px;letter-spacing:1px;}
+.sec-title{font-family:'Orbitron',monospace;font-size:10px;color:var(--accent);letter-spacing:3px;margin:16px 0 10px;display:flex;align-items:center;gap:8px;}
+.badge{font-family:'Share Tech Mono',monospace;font-size:9px;padding:2px 7px;border-radius:3px;letter-spacing:1px;}
 .badge.real{background:rgba(0,232,122,.12);color:var(--accent2);border:1px solid rgba(0,232,122,.25);}
 
 .ind-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;}
 .ind-card{background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:10px 12px;display:flex;justify-content:space-between;align-items:center;}
-.i-name{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--muted);}
-.i-val{font-family:'Share Tech Mono',monospace;font-size:12px;color:var(--text);margin-top:2px;}
-.i-sig{font-size:9px;font-family:'Share Tech Mono',monospace;padding:2px 6px;border-radius:3px;letter-spacing:1px;white-space:nowrap;}
+.i-name{font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--muted);}
+.i-val{font-family:'Share Tech Mono',monospace;font-size:13px;color:var(--text);margin-top:2px;}
+.i-sig{font-size:10px;font-family:'Share Tech Mono',monospace;padding:3px 7px;border-radius:3px;letter-spacing:1px;white-space:nowrap;}
 .i-sig.bull{background:rgba(0,232,122,.12);color:var(--accent2);}
 .i-sig.bear{background:rgba(255,51,80,.12);color:var(--danger);}
 .i-sig.side{background:rgba(61,85,112,.3);color:var(--muted);}
@@ -147,8 +147,8 @@ select:focus{border-color:var(--accent);}
 
 .bb-box{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:14px;}
 .bb-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;}
-.bb-lbl{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--muted);}
-.bb-val{font-family:'Share Tech Mono',monospace;font-size:11px;}
+.bb-lbl{font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--muted);}
+.bb-val{font-family:'Share Tech Mono',monospace;font-size:12px;}
 .bb-track{height:7px;background:var(--border);border-radius:4px;margin:10px 0 4px;position:relative;}
 .bb-fill{position:absolute;height:100%;background:rgba(0,200,240,.15);border-radius:4px;left:0;width:100%;}
 .bb-dot{position:absolute;top:-4px;width:14px;height:14px;background:var(--accent4);border-radius:50%;transform:translateX(-50%);box-shadow:0 0 8px rgba(240,192,64,.5);}
@@ -166,9 +166,9 @@ select:focus{border-color:var(--accent);}
 
 .sr-item{display:flex;justify-content:space-between;align-items:center;padding:6px 0;}
 .sr-div{height:1px;background:var(--border);margin:7px 0;}
-.sr-type{font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:2px;}
+.sr-type{font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:2px;}
 .sr-type.R{color:var(--danger);}.sr-type.S{color:var(--accent2);}
-.sr-price{font-family:'Share Tech Mono',monospace;font-size:12px;color:var(--text);}
+.sr-price{font-family:'Share Tech Mono',monospace;font-size:13px;color:var(--text);}
 .sr-dots{display:flex;gap:3px;}
 .dot{width:5px;height:5px;border-radius:50%;background:var(--border);}
 .dot.on{background:var(--accent);}
@@ -176,16 +176,16 @@ select:focus{border-color:var(--accent);}
 .zone{background:var(--bg3);border-radius:7px;padding:10px 13px;margin-bottom:7px;display:flex;justify-content:space-between;align-items:center;border-left:3px solid;}
 .zone.sup{border-color:var(--danger);}
 .zone.dem{border-color:var(--accent2);}
-.zone-lbl{font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--muted);}
-.zone-rng{font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--text);}
+.zone-lbl{font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--muted);}
+.zone-rng{font-family:'Share Tech Mono',monospace;font-size:12px;color:var(--text);}
 
 .pat-list{display:flex;flex-direction:column;gap:7px;margin-bottom:14px;}
 .pat-item{background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:8px 12px;display:flex;justify-content:space-between;align-items:center;}
-.pat-name{font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--text);}
+.pat-name{font-family:'Share Tech Mono',monospace;font-size:12px;color:var(--text);}
 
 .cpat-box{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:8px;}
-.cpat-name{font-family:'Orbitron',monospace;font-size:10px;color:var(--accent4);letter-spacing:1px;margin-bottom:4px;}
-.cpat-desc{font-size:11px;color:var(--muted);line-height:1.6;}
+.cpat-name{font-family:'Orbitron',monospace;font-size:11px;color:var(--accent4);letter-spacing:1px;margin-bottom:6px;}
+.cpat-desc{font-size:12px;color:var(--text);line-height:1.7;}
 
 .sidebar{display:flex;flex-direction:column;gap:14px;}
 .tf-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;}
@@ -218,7 +218,58 @@ select:focus{border-color:var(--accent);}
 .empty-ico{font-size:44px;margin-bottom:14px;opacity:.35;}
 .empty-txt{font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:2px;line-height:1.9;}
 
-@media(max-width:960px){.main-grid{grid-template-columns:1fr;}.controls{grid-template-columns:1fr 1fr;}.analyze-btn{grid-column:1/-1;}.trade-levels{grid-template-columns:1fr 1fr;}}
+/* ================================================================
+   RESPONSIVE — Laptop > Tablet > Mobile
+================================================================ */
+/* Laptop / Tablet landscape (≤1200px) */
+@media(max-width:1200px){
+  .main-grid{grid-template-columns:1fr 300px;}
+}
+/* Tablet portrait (≤960px) */
+@media(max-width:960px){
+  .app{padding:14px;}
+  .main-grid{grid-template-columns:1fr;}
+  .controls{grid-template-columns:1fr 1fr;}
+  .analyze-btn{grid-column:1/-1;}
+  .trade-levels{grid-template-columns:1fr 1fr;}
+  .chart-wrap{height:420px;}
+  .chart-wrap iframe{height:420px;}
+  .main-grid .sidebar{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  .score-cats{grid-template-columns:1fr 1fr 1fr;}
+}
+
+/* Mobile large (≤640px) */
+@media(max-width:640px){
+  .app{padding:10px;}
+  .logo-text{font-size:17px;letter-spacing:2px;}
+  .logo-sub{font-size:9px;letter-spacing:1px;}
+  .logo-icon{width:38px;height:38px;font-size:18px;}
+  .controls{grid-template-columns:1fr;}
+  .analyze-btn{grid-column:1/-1;width:100%;}
+  .chart-wrap{height:320px;}
+  .chart-wrap iframe{height:320px;}
+  .main-grid .sidebar{grid-template-columns:1fr;}
+  .score-cats{grid-template-columns:1fr 1fr 1fr;}
+  .trade-levels{grid-template-columns:1fr 1fr;}
+  .tf-grid{grid-template-columns:repeat(3,1fr);}
+  .api-banner{flex-direction:column;align-items:flex-start;gap:8px;}
+  .api-input{width:100%;min-width:unset;}
+  .sig-dir{font-size:30px;}
+  .lv-val{font-size:12px;}
+  select{font-size:12px;padding:10px 12px;}
+  .mq-item{padding:6px 14px;min-width:130px;}
+  .mq-price{font-size:13px;}
+  .risk-inp{width:95px;}
+}
+
+/* Mobile small (≤400px) */
+@media(max-width:400px){
+  .score-cats{grid-template-columns:1fr 1fr;}
+  .trade-levels{grid-template-columns:1fr 1fr;}
+  .sig-dir{font-size:26px;}
+  .lv-val{font-size:11px;}
+  .logo-text{font-size:15px;}
+}
 
 /* MARQUEE TICKER */
 .marquee-wrap{width:100%;background:var(--panel);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:18px;padding:4px 0;}
@@ -249,7 +300,7 @@ select:focus{border-color:var(--accent);}
       <div class="logo-icon">⚡</div>
       <div>
         <div class="logo-text">NEXUS TRADE</div>
-        <div class="logo-sub">PROFESSIONAL MARKET ANALYZER v4.5 — TWELVE DATA EDITION</div>
+        <div class="logo-sub">PROFESSIONAL MARKET ANALYZER v4.5</div>
       </div>
     </div>
     <div class="live-badge"><div class="live-dot"></div>LIVE ENGINE</div>
@@ -270,16 +321,15 @@ select:focus{border-color:var(--accent);}
         <optgroup label="— CRYPTO (Binance Real-time) —">
           <option value="BTCUSDT">BTC/USD — Bitcoin</option>
           <option value="ETHUSDT">ETH/USD — Ethereum</option>
-          <option value="BNBUSDT">BNB/USD — Binance Coin</option>
           <option value="SOLUSDT">SOL/USD — Solana</option>
           <option value="XRPUSDT">XRP/USD — Ripple</option>
+          <option value="DOGEUSDT">DOGE/USD — Dogecoin</option>
+          <option value="BNBUSDT">BNB/USD — Binance Coin</option>
         </optgroup>
-        <optgroup label="— METALS (Twelve Data) —">
+        <optgroup label="— COMMODITIES (Twelve Data) —">
           <option value="XAU/USD">XAU/USD — Gold</option>
           <option value="XAG/USD">XAG/USD — Silver</option>
-          <option value="XPT/USD">XPT/USD — Platinum</option>
-          <option value="XPD/USD">XPD/USD — Palladium</option>
-          <option value="XCU/USD">XCU/USD — Copper</option>
+          <option value="USOIL">USOIL — Crude Oil (WTI)</option>
         </optgroup>
         <optgroup label="— FOREX MAJORS (Twelve Data) —">
           <option value="EUR/USD">EUR/USD</option><option value="GBP/USD">GBP/USD</option>
@@ -301,19 +351,17 @@ select:focus{border-color:var(--accent);}
           <option value="NZD/CAD">NZD/CAD</option>
         </optgroup>
         <optgroup label="— INDICES (Twelve Data) —">
-          <option value="IXIC">NASDAQ Composite</option>
-          <option value="SPX">S&P 500</option>
-          <option value="DJI">Dow Jones</option>
-          <option value="FTSE">FTSE 100</option>
+          <option value="NDX">NASDAQ 100 (NAS100)</option>
+          <option value="SPX">S&P 500 (US500)</option>
+          <option value="DJI">Dow Jones (US30)</option>
           <option value="NI225">Nikkei 225</option>
+          <option value="HSI">Hang Seng</option>
         </optgroup>
       </select>
     </div>
     <div><label class="ctrl-label">TIMEFRAME</label>
       <select id="tfSel">
         <optgroup label="— SCALPING —">
-          <option value="1min">M1 — 1 Minute</option>
-          <option value="3min">M3 — 3 Minutes</option>
           <option value="5min">M5 — 5 Minutes</option>
           <option value="15min">M15 — 15 Minutes</option>
         </optgroup>
@@ -342,8 +390,6 @@ select:focus{border-color:var(--accent);}
       <span class="chart-title">📈 LIVE CHART — TRADINGVIEW</span>
       <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
         <div class="tf-tabs">
-          <button class="tf-tab" onclick="setCTF('1')">M1</button>
-          <button class="tf-tab" onclick="setCTF('3')">M3</button>
           <button class="tf-tab" onclick="setCTF('5')">M5</button>
           <button class="tf-tab" onclick="setCTF('15')">M15</button>
           <button class="tf-tab" onclick="setCTF('30')">M30</button>
@@ -823,12 +869,15 @@ function buildAnalysis(candles, symbol) {
   // overall score untuk display tetap pakai semua indikator (termasuk confluence)
   // tapi signal direction murni dari core
 
-  // Pip value
-  const isIdx=['IXIC','SPX','DJI','FTSE','NI225'].includes(symbol);
-  const pip = isIdx?1 : symbol.includes('JPY')?0.01
-            : (symbol.includes('XAU')||symbol.includes('XPD')||symbol.includes('XPT'))?0.1
-            : (symbol.includes('XAG')||symbol.includes('XCU'))?0.001
-            : symbol.endsWith('USDT')?(price>1000?1:0.01) : 0.0001;
+  // Pip value — per instrument
+  const isIdx = ['NDX','SPX','DJI','NI225','HSI'].includes(symbol);
+  const pip = isIdx ? 1
+    : symbol==='USOIL'                                          ? 0.01
+    : symbol.includes('XAU')                                    ? 0.1
+    : symbol.includes('XAG')                                    ? 0.001
+    : symbol.includes('JPY')                                    ? 0.01
+    : symbol.endsWith('USDT') ? (price>100?0.01:price>1?0.0001:0.00001)
+    : 0.0001;
 
   // ATR-based SL/TP
   const slDist  = Math.max(atrSafe*1.5, pip*80);
@@ -889,27 +938,28 @@ function buildAnalysis(candles, symbol) {
 // ================================================================
 function fmt(sym, p) {
   if(p===null||p===undefined||isNaN(p)) return '—';
-  if(sym.includes('XAU')||sym.includes('XPD')||sym.includes('XPT')) return p.toFixed(2);
-  if(sym.includes('XAG')||sym.includes('XCU')) return p.toFixed(4);
+  if(sym.includes('XAU')||sym==='USOIL') return p.toFixed(2);
+  if(sym.includes('XAG')) return p.toFixed(3);
   if(sym.includes('JPY')) return p.toFixed(3);
-  if(sym.endsWith('USDT')) return p>1000?p.toFixed(2):p.toFixed(4);
-  if(['IXIC','SPX','DJI','FTSE','NI225'].includes(sym)) return p.toFixed(2);
+  if(sym.endsWith('USDT')) return p>100?p.toFixed(2):p>1?p.toFixed(4):p.toFixed(6);
+  if(['NDX','SPX','DJI','NI225','HSI'].includes(sym)) return p.toFixed(2);
   return p.toFixed(5);
 }
 function fmtT(sym,p){
   if(p===null||p===undefined||isNaN(p)) return '—';
-  if(sym.includes('XAU')||sym.includes('XPD')||sym.includes('XPT')||sym.endsWith('USDT')) return p.toFixed(2);
-  if(sym.includes('XAG')||sym.includes('XCU')) return p.toFixed(4);
+  if(sym.includes('XAU')||sym==='USOIL') return p.toFixed(2);
+  if(sym.endsWith('USDT')) return p>100?p.toFixed(2):p>1?p.toFixed(4):p.toFixed(6);
+  if(sym.includes('XAG')) return p.toFixed(3);
   if(sym.includes('JPY')) return p.toFixed(3);
-  if(['IXIC','SPX','DJI','FTSE','NI225'].includes(sym)) return p.toFixed(2);
+  if(['NDX','SPX','DJI','NI225','HSI'].includes(sym)) return p.toFixed(2);
   return p.toFixed(5);
 }
 
 // ================================================================
 //  DATA FETCHING
 // ================================================================
-const binTF = {'1min':'1m','3min':'3m','5min':'5m','15min':'15m','30min':'30m','1h':'1h','4h':'4h','1day':'1d'};
-const twTF  = {'1min':'1min','3min':'3min','5min':'5min','15min':'15min','30min':'30min','1h':'1h','4h':'4h','1day':'1day'};
+const binTF = {'5min':'5m','15min':'15m','30min':'30m','1h':'1h','4h':'4h','1day':'1d'};
+const twTF  = {'5min':'5min','15min':'15min','30min':'30min','1h':'1h','4h':'4h','1day':'1day'};
 
 // Twelve Data API Key — loaded from localStorage or hardcoded
 let TWELVE_KEY = localStorage.getItem('twelve_key') || 'MASUKKAN_TWELVE_DATA_KEY_DISINI';
@@ -953,8 +1003,9 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-const METALS  = ['XAU/USD','XAG/USD','XPT/USD','XPD/USD','XCU/USD'];
-const INDICES = ['IXIC','SPX','DJI','FTSE','NI225'];
+const COMMODITIES = ['XAU/USD','XAG/USD','USOIL'];
+const INDICES     = ['NDX','SPX','DJI','NI225','HSI'];
+const METALS = COMMODITIES; // alias for backward compat
 
 async function fetchBinCandles(sym, tf) {
   const res = await fetch(`https://api.binance.com/api/v3/klines?symbol=${sym}&interval=${binTF[tf]||'1h'}&limit=300`);
@@ -991,17 +1042,17 @@ async function fetchNonCryptoCandles(sym, tf) {
 // ================================================================
 // All ticker symbols for marquee
 const MARQUEE_CRYPTO = [
-  {id:'BTCUSDT',label:'BTC/USD'},
-  {id:'ETHUSDT',label:'ETH/USD'},
-  {id:'BNBUSDT',label:'BNB/USD'},
-  {id:'SOLUSDT',label:'SOL/USD'},
-  {id:'XRPUSDT',label:'XRP/USD'},
+  {id:'BTCUSDT',  label:'BTC/USD'},
+  {id:'ETHUSDT',  label:'ETH/USD'},
+  {id:'SOLUSDT',  label:'SOL/USD'},
+  {id:'XRPUSDT',  label:'XRP/USD'},
+  {id:'DOGEUSDT', label:'DOGE/USD'},
+  {id:'BNBUSDT',  label:'BNB/USD'},
 ];
-// Only 8 most popular pairs for ticker (save API credits)
-// Full analysis still works for ALL pairs when clicking ANALYZE
 const MARQUEE_FOREX = [
-  'XAU/USD','EUR/USD','GBP/USD','USD/JPY',
-  'AUD/USD','USD/CAD','GBP/JPY','EUR/JPY',
+  'XAU/USD','XAG/USD','USOIL',
+  'EUR/USD','GBP/USD','USD/JPY','AUD/USD',
+  'NDX','SPX','DJI','NI225','HSI',
 ];
 
 let tickerData = {};
@@ -1229,11 +1280,13 @@ async function runAnalysis() {
         <div class="ind-card"><div><div class="i-name">MA 20</div><div class="i-val">${a.MA20?fmt(symbol,a.MA20):'—'}</div></div>
           ${a.MA20?`<span class="i-sig ${a.entry>a.MA20?'bull':'bear'}">${a.entry>a.MA20?'ABOVE':'BELOW'}</span>`:`<span class="i-sig side">N/A</span>`}</div>
         <div class="ind-card"><div><div class="i-name">MA 50</div><div class="i-val">${a.MA50?fmt(symbol,a.MA50):'—'}</div></div>
-          ${a.MA50&&a.MA20?`<span class="i-sig ${a.MA20>a.MA50?'bull':'bear'}">${a.MA20>a.MA50?'GOLDEN X':'DEATH X'}</span>`:`<span class="i-sig side">N/A</span>`}</div>
+          ${a.MA50?`<span class="i-sig ${a.entry>a.MA50?'bull':'bear'}">${a.entry>a.MA50?'ABOVE':'BELOW'}</span>`:`<span class="i-sig side">N/A</span>`}</div>
         <div class="ind-card"><div><div class="i-name">EMA 100</div><div class="i-val">${a.EMA100?fmt(symbol,a.EMA100):'—'}</div></div>
           ${a.EMA100?`<span class="i-sig ${a.entry>a.EMA100?'bull':'bear'}">${a.entry>a.EMA100?'ABOVE':'BELOW'}</span>`:`<span class="i-sig side">N/A</span>`}</div>
         <div class="ind-card"><div><div class="i-name">MA 200</div><div class="i-val">${a.MA200?fmt(symbol,a.MA200):'—'}</div></div>
-          ${a.MA200?`<span class="i-sig ${a.entry>a.MA200?'bull':'bear'}">${a.entry>a.MA200?'ABOVE MA':'BELOW MA'}</span>`:`<span class="i-sig side">N/A &lt;200</span>`}</div>
+          ${a.MA200?`<span class="i-sig ${a.entry>a.MA200?'bull':'bear'}">${a.entry>a.MA200?'ABOVE':'BELOW'}</span>`:`<span class="i-sig side">N/A &lt;200</span>`}</div>
+        <div class="ind-card" style="grid-column:span 2"><div><div class="i-name">MA 20 / 50 CROSS</div><div class="i-val" style="font-size:11px;">${a.MA20&&a.MA50?(a.MA20>a.MA50?'Golden Cross ✨':'Death Cross 💀'):'—'}</div></div>
+          ${a.MA20&&a.MA50?`<span class="i-sig ${a.MA20>a.MA50?'bull':'bear'}">${a.MA20>a.MA50?'BULLISH':'BEARISH'}</span>`:`<span class="i-sig side">N/A</span>`}</div>
       </div>
 
       <!-- ICHIMOKU -->
@@ -1414,10 +1467,13 @@ function calcRisk(){
 // ================================================================
 let tvSym='BINANCE:BTCUSDT', tvInt='60', tvSty='1';
 const tvMap={
+  // Crypto
   'BTCUSDT':'BINANCE:BTCUSDT','ETHUSDT':'BINANCE:ETHUSDT',
-  'BNBUSDT':'BINANCE:BNBUSDT','SOLUSDT':'BINANCE:SOLUSDT','XRPUSDT':'BINANCE:XRPUSDT',
-  'XAU/USD':'TVC:GOLD','XAG/USD':'TVC:SILVER','XPT/USD':'TVC:PLATINUM',
-  'XPD/USD':'TVC:PALLADIUM','XCU/USD':'CAPITALCOM:COPPER',
+  'SOLUSDT':'BINANCE:SOLUSDT','XRPUSDT':'BINANCE:XRPUSDT',
+  'DOGEUSDT':'BINANCE:DOGEUSDT','BNBUSDT':'BINANCE:BNBUSDT',
+  // Commodities
+  'XAU/USD':'TVC:GOLD','XAG/USD':'TVC:SILVER','USOIL':'TVC:USOIL',
+  // Forex
   'EUR/USD':'FX:EURUSD','GBP/USD':'FX:GBPUSD','USD/JPY':'FX:USDJPY',
   'USD/CHF':'FX:USDCHF','AUD/USD':'FX:AUDUSD','USD/CAD':'FX:USDCAD','NZD/USD':'FX:NZDUSD',
   'EUR/GBP':'FX:EURGBP','EUR/JPY':'FX:EURJPY','EUR/CHF':'FX:EURCHF',
@@ -1427,16 +1483,17 @@ const tvMap={
   'AUD/JPY':'FX:AUDJPY','AUD/CHF':'FX:AUDCHF','AUD/CAD':'FX:AUDCAD','AUD/NZD':'FX:AUDNZD',
   'CAD/JPY':'FX:CADJPY','CAD/CHF':'FX:CADCHF','CHF/JPY':'FX:CHFJPY',
   'NZD/JPY':'FX:NZDJPY','NZD/CHF':'FX:NZDCHF','NZD/CAD':'FX:NZDCAD',
-  'IXIC':'NASDAQ:IXIC','SPX':'SP:SPX','DJI':'DJ:DJI','FTSE':'SPREADEX:FTSE','NI225':'INDEX:NKY'
+  // Indices
+  'NDX':'NASDAQ:NDX','SPX':'SP:SPX','DJI':'DJ:DJI','NI225':'INDEX:NKY','HSI':'HSI:HSI'
 };
-const tfLbl={'1':'M1','3':'M3','5':'M5','15':'M15','30':'M30','60':'H1','240':'H4','D':'D1'};
+const tfLbl={'5':'M5','15':'M15','30':'M30','60':'H1','240':'H4','D':'D1'};
 
 function loadTV(sym,intv,sty){
   document.getElementById('chartLoad').style.display='flex';
   const c=document.getElementById('tvContainer'); c.innerHTML='';
   const src=`https://s.tradingview.com/widgetembed/?frameElementId=tv&symbol=${encodeURIComponent(sym)}&interval=${intv}&theme=dark&style=${sty}&timezone=Asia%2FJakarta&studies=RSI%40tv-basicstudies%1FMACD%40tv-basicstudies%1FBB%40tv-basicstudies&hidesidetoolbar=0&withdateranges=1&locale=en`;
   const f=document.createElement('iframe');
-  f.src=src; f.style.cssText='width:100%;height:650px;border:none;'; f.allow='fullscreen';
+  f.src=src; f.style.cssText='width:100%;height:500px;border:none;'; f.allow='fullscreen';
   f.onload=()=>{document.getElementById('chartLoad').style.display='none';};
   setTimeout(()=>{document.getElementById('chartLoad').style.display='none';},5000);
   c.appendChild(f);
@@ -1451,7 +1508,7 @@ function setCTF(i){
 function setCS(s){ tvSty=s; loadTV(tvSym,tvInt,tvSty); }
 function updateChart(sym,tf){
   tvSym=tvMap[sym]||'BINANCE:BTCUSDT';
-  tvInt=({'1min':'1','3min':'3','5min':'5','15min':'15','30min':'30','1h':'60','4h':'240','1day':'D'})[tf]||'60';
+  tvInt=({'5min':'5','15min':'15','30min':'30','1h':'60','4h':'240','1day':'D'})[tf]||'60';
   document.querySelectorAll('.tf-tab').forEach(b=>{
     if(Object.values(tfLbl).includes(b.textContent)) b.classList.toggle('active',b.textContent===tfLbl[tvInt]);
   });
